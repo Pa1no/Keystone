@@ -35,9 +35,15 @@ A aplicação permite criar uma conta e realizar login utilizando **e-mail e sen
 login-project/
 ├── frontend/
 │   ├── src/
+│   │   ├── app/                    # rotas (App Router)
+│   │   ├── components/
+│   │   │   ├── auth/               # painel, formulário e assinatura visual
+│   │   │   └── ui/                 # button, input, theme toggle
+│   │   ├── hooks/                  # useTheme
+│   │   └── lib/                    # auth (contrato p/ backend) e utils
 │   └── package.json
 │
-├── backend/
+├── backend/                        # a ser construído
 │   ├── src/
 │   ├── database/
 │   └── package.json
@@ -160,14 +166,18 @@ ____________________________________________________
 
 **Em desenvolvimento**
 
-- [ ] Interface de login
-- [ ] Interface de cadastro
+- [x] Interface de login
+- [x] Interface de cadastro
+- [x] Alternância entre login e cadastro
+- [x] Recuperação de senha
+- [x] Modo claro/escuro
+- [x] Validação dos dados informados
 - [ ] Backend
 - [ ] Banco de dados SQLite
 - [ ] Cadastro de usuários
 - [ ] Login de usuários
 - [ ] Integração frontend/backend
-- [ ] Validações e tratamento de erros
+- [ ] Validações e tratamento de erros (lado servidor)
 
 ## Autor
 
