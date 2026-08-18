@@ -1,51 +1,82 @@
-# Login & Cadastro
+# Keystone
 
-Página de **login e cadastro de usuários** desenvolvida como projeto de estudo e portfólio.
+Plataforma de **gerenciamento e geração de chaves** desenvolvida como projeto de estudo e portfólio.
 
-A aplicação permite criar uma conta e realizar login utilizando **e-mail e senha**, armazenando os usuários em um banco de dados SQLite.
+O Keystone permite que o usuário crie uma conta, faça login e acesse um **dashboard** onde pode gerar chaves (API keys, tokens, senhas) com **validade configurável**, **tamanho customizável** e **conjunto de caracteres específico** — tudo de forma sob demanda.
 
 ## Tecnologias
 
-**Frontend**
-- Next.js
-- TypeScript
+### Frontend
 
-**Backend**
-- Node.js
-- TypeScript
+| Biblioteca | Versão | Finalidade |
+|---|---|---|
+| Next.js | 16.3.1 | Framework React (App Router) |
+| React | 19.2.8 | Biblioteca de interface |
+| TypeScript | ^5 | Tipagem estática |
+| Tailwind CSS | v4 | Framework de estilos |
+| lucide-react | ^1.31.0 | Ícones |
+| clsx | ^2.1.1 | Classes condicionais |
+| tailwind-merge | ^3.6.0 | Deduplicação de classes Tailwind |
 
-**Banco de dados**
-- SQLite
+### Backend
+
+| Biblioteca | Versão | Finalidade |
+|---|---|---|
+| Express | 5.2.1 | Framework HTTP |
+| better-sqlite3 | 13.0.3 | Driver SQLite |
+| bcryptjs | 3.0.3 | Hash de senhas |
+| cors | 2.8.6 | Compartilhamento de recursos |
+
+### Banco de Dados
+
+- SQLite (via better-sqlite3)
 
 ## Funcionalidades
 
-- Login com e-mail e senha;
+### Autenticação
 - Cadastro de novos usuários;
-- Alternância entre os formulários de login e cadastro;
-- Validação dos dados informados;
-- Armazenamento dos usuários no SQLite;
-- Verificação das credenciais no login;
-- Proteção das senhas antes do armazenamento.
+- Login com e-mail e senha;
+- Recuperação de senha;
+- Validação de dados no cliente;
+- Proteção das senhas com bcrypt;
+- Modo claro/escuro;
+
+### Dashboard — Gerador de Chaves
+- Geração de chaves sob demanda;
+- Configuração de **validade** (data de expiração);
+- Configuração de **tamanho** da chave;
+- Seleção de **conjunto de caracteres** (letras, números, símbolos, customizado);
+- Histórico de chaves geradas pelo usuário;
+- Exclusão de chaves;
+- Cópia rápida da chave para a área de transferência;
 
 ## Estrutura do Projeto
 
-> Atualize esta estrutura de acordo com a implementação final.
-
 ```text
-login-project/
+login-auth/
 ├── frontend/
 │   ├── src/
 │   │   ├── app/                    # rotas (App Router)
+│   │   │   ├── page.tsx            # página de autenticação
+│   │   │   └── dashboard/          # dashboard (a ser implementado)
 │   │   ├── components/
-│   │   │   ├── auth/               # painel, formulário e assinatura visual
+│   │   │   ├── auth/               # painel, formulário e cifra
+│   │   │   ├── dashboard/          # gerador de chaves e cards
 │   │   │   └── ui/                 # button, input, theme toggle
 │   │   ├── hooks/                  # useTheme
-│   │   └── lib/                    # auth (contrato p/ backend) e utils
+│   │   └── lib/                    # auth, utils, key generation
 │   └── package.json
 │
-├── backend/                        # a ser construído
+├── backend/
 │   ├── src/
-│   ├── database/
+│   │   ├── server.ts               # Entry point do Express
+│   │   ├── routes/                 # Rotas da API
+│   │   │   ├── auth.ts             # login, registro, recuperação
+│   │   │   └── keys.ts            # CRUD de chaves
+│   │   ├── middleware/              # Validação, auth, erros
+│   │   ├── database/
+│   │   │   └── schema.ts           # Schema SQLite
+│   │   └── utils/                  # Geração de chaves, helpers
 │   └── package.json
 │
 ├── .gitignore
@@ -58,7 +89,7 @@ login-project/
 
 ```bash
 git clone URL_DO_REPOSITORIO
-cd NOME_DO_REPOSITORIO
+cd login-auth
 ```
 
 ### 2. Instale as dependências
@@ -98,18 +129,16 @@ Acesse a aplicação pelo navegador:
 http://localhost:3000
 ```
 
-> Os comandos e portas podem ser atualizados de acordo com a configuração final do projeto.
-
-## Funcionamento
+## Fluxo da Aplicação
 
 ### Cadastro
 
 ```text
 Usuário preenche os dados
         ↓
-Frontend envia os dados
+Frontend envia para POST /api/auth/register
         ↓
-Backend valida os dados
+Backend valida e hasheia a senha (bcryptjs)
         ↓
 Usuário é registrado no SQLite
 ```
@@ -119,48 +148,43 @@ Usuário é registrado no SQLite
 ```text
 Usuário informa e-mail e senha
         ↓
-Frontend envia as credenciais
+Frontend envia para POST /api/auth/login
         ↓
-Backend consulta o SQLite
+Backend verifica as credenciais no SQLite
         ↓
-Credenciais são verificadas
+Token de sessão retornado
         ↓
-Login autorizado ou recusado
+Redirecionamento para o dashboard
 ```
 
-## Desenvolvimento
-
-### O que foi feito
-
-> Preencha após o desenvolvimento.
+### Geração de Chave
 
 ```text
-____________________________________________________
-
-____________________________________________________
-
-____________________________________________________
+Usuário configura parâmetros:
+  • Tamanho (ex: 32 caracteres)
+  • Validade (ex: 7 dias)
+  • Caracteres (ABC, 123, !@#, ou custom)
+        ↓
+Frontend envia para POST /api/keys/generate
+        ↓
+Backend gera a chave com crypto random
+        ↓
+Chave armazenada no SQLite com data de expiração
+        ↓
+Chave exibida no dashboard
 ```
 
-### Como foi feito
+## API (Planejada)
 
-> Explique brevemente as principais decisões e etapas do desenvolvimento.
-
-```text
-____________________________________________________
-
-____________________________________________________
-
-____________________________________________________
-```
-
-## Preview
-
-> Adicione uma imagem da aplicação quando a interface estiver pronta.
-
-```md
-![Preview do projeto](./docs/preview.png)
-```
+| Método | Rota | Descrição |
+|---|---|---|
+| `POST` | `/api/auth/register` | Cadastro de usuário |
+| `POST` | `/api/auth/login` | Login do usuário |
+| `POST` | `/api/auth/forgot-password` | Solicitação de redefinição |
+| `POST` | `/api/auth/reset-password` | Redefinição de senha |
+| `POST` | `/api/keys/generate` | Gerar nova chave |
+| `GET` | `/api/keys` | Listar chaves do usuário |
+| `DELETE` | `/api/keys/:id` | Excluir uma chave |
 
 ## Status
 
@@ -172,11 +196,15 @@ ____________________________________________________
 - [x] Recuperação de senha
 - [x] Modo claro/escuro
 - [x] Validação dos dados informados
-- [ ] Backend
-- [ ] Banco de dados SQLite
-- [ ] Cadastro de usuários
-- [ ] Login de usuários
+- [ ] Backend Express (rotas, middleware, banco)
+- [ ] Banco de dados SQLite (schema e migrations)
+- [ ] Cadastro de usuários (API)
+- [ ] Login de usuários (API)
 - [ ] Integração frontend/backend
+- [ ] Dashboard do usuário
+- [ ] Gerador de chaves com parâmetros
+- [ ] Histórico de chaves
+- [ ] Expiração automática de chaves
 - [ ] Validações e tratamento de erros (lado servidor)
 
 ## Autor
