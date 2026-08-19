@@ -1,6 +1,7 @@
 "use client";
 
-import { type FormEvent, useState } from "react";
+import { type SubmitEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   CircleCheck,
@@ -22,6 +23,11 @@ import { Input } from "@/components/ui/input";
 
 type Mode = "signin" | "signup" | "forgot";
 
+interface AuthFormProps {
+  initialMode: Mode;
+  className?: string;
+}
+
 interface FormErrors {
   email?: string;
   password?: string;
@@ -39,6 +45,7 @@ const copy: Record<
     submit: string;
     togglePrompt: string;
     toggleAction: string;
+    toggleRoute: string;
   }
 > = {
   signin: {
@@ -48,6 +55,7 @@ const copy: Record<
     submit: "Entrar",
     togglePrompt: "Novo por aqui?",
     toggleAction: "Crie sua conta",
+    toggleRoute: "/register",
   },
   signup: {
     eyebrow: "Acesso seguro",
@@ -56,6 +64,7 @@ const copy: Record<
     submit: "Criar conta",
     togglePrompt: "Já tem uma conta?",
     toggleAction: "Entre agora",
+    toggleRoute: "/login",
   },
   forgot: {
     eyebrow: "Acesso seguro",
@@ -64,6 +73,7 @@ const copy: Record<
     submit: "Enviar link",
     togglePrompt: "",
     toggleAction: "",
+    toggleRoute: "/login",
   },
 };
 
@@ -101,8 +111,8 @@ function validate(
   return errors;
 }
 
-export function AuthForm({ className }: { className?: string }) {
-  const [mode, setMode] = useState<Mode>("signin");
+export function AuthForm({ initialMode, className }: AuthFormProps) {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -111,8 +121,8 @@ export function AuthForm({ className }: { className?: string }) {
   const [status, setStatus] = useState<"idle" | "loading" | "info" | "success">("idle");
   const [notice, setNotice] = useState<string | null>(null);
 
-  const isForgot = mode === "forgot";
-  const meta = copy[mode];
+  const isForgot = initialMode === "forgot";
+  const meta = copy[initialMode];
 
   const passwordTrailing = (
     <button
@@ -129,20 +139,14 @@ export function AuthForm({ className }: { className?: string }) {
     </button>
   );
 
-  function switchMode(next: Mode) {
-    setMode(next);
-    setPassword("");
-    setConfirmPassword("");
-    setShowPassword(false);
-    setErrors({});
-    setNotice(null);
-    setStatus("idle");
+  function navigateTo(route: string) {
+    router.push(route);
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const nextErrors = validate(email, password, confirmPassword, mode);
+    const nextErrors = validate(email, password, confirmPassword, initialMode);
     setErrors(nextErrors);
     if (nextErrors.email || nextErrors.password || nextErrors.confirmPassword) return;
 
@@ -151,9 +155,9 @@ export function AuthForm({ className }: { className?: string }) {
 
     try {
       const trimmedEmail = email.trim();
-      if (mode === "signin") await signIn({ email: trimmedEmail, password });
-      if (mode === "signup") await signUp({ email: trimmedEmail, password });
-      if (mode === "forgot") {
+      if (initialMode === "signin") await signIn({ email: trimmedEmail, password });
+      if (initialMode === "signup") await signUp({ email: trimmedEmail, password });
+      if (initialMode === "forgot") {
         await requestPasswordReset(trimmedEmail);
         setStatus("success");
         return;
@@ -190,7 +194,7 @@ export function AuthForm({ className }: { className?: string }) {
         <Button
           variant="ghost"
           className="mt-8 w-full"
-          onClick={() => switchMode("signin")}
+          onClick={() => navigateTo("/login")}
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           Voltar para o login
@@ -201,7 +205,7 @@ export function AuthForm({ className }: { className?: string }) {
 
   return (
     <div
-      key={mode}
+      key={initialMode}
       className={cn(
         "animate-fade-up rounded-3xl border border-line bg-surface p-7 shadow-card sm:p-9 dark:shadow-card-dark",
         className,
@@ -233,17 +237,17 @@ export function AuthForm({ className }: { className?: string }) {
           <Input
             label="Senha"
             type={showPassword ? "text" : "password"}
-            autoComplete={mode === "signup" ? "new-password" : "current-password"}
+            autoComplete={initialMode === "signup" ? "new-password" : "current-password"}
             placeholder="Sua senha"
             icon={<LockKeyhole className="h-[18px] w-[18px]" />}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             error={errors.password}
             labelAction={
-              mode === "signin" ? (
+              initialMode === "signin" ? (
                 <button
                   type="button"
-                  onClick={() => switchMode("forgot")}
+                  onClick={() => navigateTo("/forgot-password")}
                   className="-mx-1.5 cursor-pointer rounded px-1.5 py-0.5 text-xs font-medium text-muted transition-colors duration-150 hover:bg-accent-soft hover:text-accent-strong hover:underline decoration-accent-strong underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
                   Esqueceu sua senha?
@@ -254,7 +258,7 @@ export function AuthForm({ className }: { className?: string }) {
           />
         )}
 
-        {mode === "signup" && (
+        {initialMode === "signup" && (
           <Input
             label="Confirmar senha"
             type={showPassword ? "text" : "password"}
@@ -298,7 +302,7 @@ export function AuthForm({ className }: { className?: string }) {
       {isForgot ? (
         <button
           type="button"
-          onClick={() => switchMode("signin")}
+          onClick={() => navigateTo("/login")}
           className="mx-auto mt-8 flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-muted transition-colors duration-150 hover:bg-raised hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
@@ -309,7 +313,7 @@ export function AuthForm({ className }: { className?: string }) {
           {meta.togglePrompt}{" "}
           <button
             type="button"
-            onClick={() => switchMode(mode === "signin" ? "signup" : "signin")}
+            onClick={() => navigateTo(meta.toggleRoute)}
             className="-mx-1.5 cursor-pointer rounded-md px-1.5 py-0.5 font-semibold text-accent-strong transition-colors duration-150 hover:bg-accent-soft hover:underline decoration-accent-strong underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             {meta.toggleAction}
