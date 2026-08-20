@@ -2,7 +2,7 @@
 
 Plataforma de **gerenciamento e geração de chaves** desenvolvida como projeto de estudo e portfólio.
 
-O Keystone permite que o usuário crie uma conta, faça login e acesse um **dashboard** onde pode gerar chaves (API keys, tokens, senhas) com **validade configurável**, **tamanho customizável** e **conjunto de caracteres específico** — tudo de forma sob demanda.
+O Keystone permite que o usuário crie uma conta, faça login e acesse um **dashboard** onde pode gerar chaves (API keys, tokens, senhas) com **validade configurável**, **tamanho customizável** e **conjunto de caracteres específico**. O dashboard também oferece uma **ferramenta de validação** para testar regras de caracteres, força e conformidade das chaves — tudo de forma sob demanda.
 
 ## Tecnologias
 
@@ -26,6 +26,7 @@ O Keystone permite que o usuário crie uma conta, faça login e acesse um **dash
 | better-sqlite3 | 13.0.3 | Driver SQLite |
 | bcryptjs | 3.0.3 | Hash de senhas |
 | cors | 2.8.6 | Compartilhamento de recursos |
+| jsonwebtoken | 9.0.3 | Transmissão de informações |
 
 ### Banco de Dados
 
@@ -41,14 +42,18 @@ O Keystone permite que o usuário crie uma conta, faça login e acesse um **dash
 - Proteção das senhas com bcrypt;
 - Modo claro/escuro;
 
-### Dashboard — Gerador de Chaves
-- Geração de chaves sob demanda;
-- Configuração de **validade** (data de expiração);
-- Configuração de **tamanho** da chave;
-- Seleção de **conjunto de caracteres** (letras, números, símbolos, customizado);
-- Histórico de chaves geradas pelo usuário;
-- Exclusão de chaves;
+### Dashboard
+- Painel principal com visão geral das chaves do usuário;
+- **Gerador de chaves/senhas** com configuração de:
+  - Tamanho (ex: 8, 16, 32, 64 caracteres);
+  - Validade (data de expiração ou sem expiração);
+  - Conjunto de caracteres (letras maiúsculas/minúsculas, números, símbolos, ou conjunto customizado);
+- Histórico de chaves geradas com data de criação e status (ativa/expirada);
+- Exclusão de chaves individuais;
 - Cópia rápida da chave para a área de transferência;
+- **Ferramenta de validação** para testar regras de caracteres (força da senha, entropia, conformidade);
+- Botão de **logout** com encerramento da sessão;
+- Indicador de status da conta (e-mail do usuário logado);
 
 ## Estrutura do Projeto
 
@@ -57,11 +62,16 @@ login-auth/
 ├── frontend/
 │   ├── src/
 │   │   ├── app/                    # rotas (App Router)
-│   │   │   ├── page.tsx            # página de autenticação
-│   │   │   └── dashboard/          # dashboard (a ser implementado)
+│   │   │   ├── page.tsx            # redirect → /login
+│   │   │   ├── login/page.tsx      # tela de login
+│   │   │   ├── register/page.tsx   # tela de cadastro
+│   │   │   ├── forgot-password/    # recuperação de senha
+│   │   │   └── dashboard/          # painel autenticado
+│   │   │       ├── page.tsx        # visão geral + gerador
+│   │   │       └── validate/       # ferramenta de validação
 │   │   ├── components/
-│   │   │   ├── auth/               # painel, formulário e cifra
-│   │   │   ├── dashboard/          # gerador de chaves e cards
+│   │   │   ├── auth/               # painel, formulário, cifra e layout
+│   │   │   ├── dashboard/          # gerador de chaves, cards, toolbar
 │   │   │   └── ui/                 # button, input, theme toggle
 │   │   ├── hooks/                  # useTheme
 │   │   └── lib/                    # auth, utils, key generation
@@ -136,7 +146,7 @@ http://localhost:3000
 ```text
 Usuário preenche os dados
         ↓
-Frontend envia para POST /api/auth/register
+Frontend envia para POST /register
         ↓
 Backend valida e hasheia a senha (bcryptjs)
         ↓
@@ -148,13 +158,31 @@ Usuário é registrado no SQLite
 ```text
 Usuário informa e-mail e senha
         ↓
-Frontend envia para POST /api/auth/login
+Frontend envia para POST /login
         ↓
 Backend verifica as credenciais no SQLite
         ↓
 Token de sessão retornado
         ↓
 Redirecionamento para o dashboard
+```
+
+### Dashboard
+
+```text
+Usuário faz login com sucesso
+        ↓
+Token de sessão armazenado
+        ↓
+Redirecionamento para /dashboard
+        ↓
+Dashboard carrega chaves do usuário (GET /dashboard/keys)
+        ↓
+Painel exibe:
+  • Chaves ativas e expiradas
+  • Botão "Gerar nova chave"
+  • Botão "Validar" (ferramenta de teste)
+  • Botão "Logout"
 ```
 
 ### Geração de Chave
@@ -165,7 +193,7 @@ Usuário configura parâmetros:
   • Validade (ex: 7 dias)
   • Caracteres (ABC, 123, !@#, ou custom)
         ↓
-Frontend envia para POST /api/keys/generate
+Frontend envia para POST /dashboard/generate
         ↓
 Backend gera a chave com crypto random
         ↓
@@ -174,17 +202,34 @@ Chave armazenada no SQLite com data de expiração
 Chave exibida no dashboard
 ```
 
+### Validação de Chave
+
+```text
+Usuário acessa /dashboard/validate
+        ↓
+Insere uma chave ou configura regras de teste
+        ↓
+Ferramenta valida em tempo real:
+  • Comprimento mínimo
+  • Conformidade dos caracteres
+  • Força/entropia da chave
+        ↓
+Exibe resultado: Válida / Inválida + detalhes
+```
+
 ## API (Planejada)
 
 | Método | Rota | Descrição |
 |---|---|---|
-| `POST` | `/api/auth/register` | Cadastro de usuário |
-| `POST` | `/api/auth/login` | Login do usuário |
-| `POST` | `/api/auth/forgot-password` | Solicitação de redefinição |
-| `POST` | `/api/auth/reset-password` | Redefinição de senha |
-| `POST` | `/api/keys/generate` | Gerar nova chave |
-| `GET` | `/api/keys` | Listar chaves do usuário |
-| `DELETE` | `/api/keys/:id` | Excluir uma chave |
+| `POST` | `/register` | Cadastro de usuário |
+| `POST` | `/login` | Login do usuário |
+| `POST` | `/forgot-password` | Solicitação de redefinição |
+| `POST` | `/reset-password` | Redefinição de senha |
+| `POST` | `/logout` | Encerramento da sessão |
+| `POST` | `/dashboard/keys/generate` | Gerar nova chave |
+| `GET` | `/dashboard/keys` | Listar chaves do usuário |
+| `DELETE` | `/dashboard/keys/:id` | Excluir uma chave |
+| `POST` | `/dashboard/keys/validate` | Validar regras de uma chave |
 
 ## Status
 
@@ -196,14 +241,20 @@ Chave exibida no dashboard
 - [x] Recuperação de senha
 - [x] Modo claro/escuro
 - [x] Validação dos dados informados
+- [x] Rotas /login, /register, /forgot-password
 - [ ] Backend Express (rotas, middleware, banco)
 - [ ] Banco de dados SQLite (schema e migrations)
 - [ ] Cadastro de usuários (API)
 - [ ] Login de usuários (API)
+- [ ] Logout (API + frontend)
 - [ ] Integração frontend/backend
-- [ ] Dashboard do usuário
-- [ ] Gerador de chaves com parâmetros
-- [ ] Histórico de chaves
+- [ ] Dashboard — layout e navegação
+- [ ] Dashboard — gerador de chaves com parâmetros
+- [ ] Dashboard — histórico de chaves
+- [ ] Dashboard — exclusão de chaves
+- [ ] Dashboard — cópia para área de transferência
+- [ ] Dashboard — indicador de status da conta
+- [ ] Ferramenta de validação de chaves
 - [ ] Expiração automática de chaves
 - [ ] Validações e tratamento de erros (lado servidor)
 
